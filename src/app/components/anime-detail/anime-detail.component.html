@@ -6,3 +6,27 @@
     <p>Genre: {{ anime.genre }}</p>
     <p>Episodes: {{ anime.episodes }}</p>
 </div>
+
+<div *ngIf="anime">
+    <h1>{{ anime.title }}</h1>
+    <h2>Current Episode: {{ currentEpisode }}</h2>
+
+    <!-- Відео плеєр -->
+    <video #videoPlayer width="640" height="360" controls [src]="videoSource" (loadedmetadata)="updateSubtitleTracks()">
+        Ваш браузер не підтримує відео тег.
+    </video>
+
+    <!-- Кнопки для перемикання серій -->
+    <div>
+        <button (click)="previousEpisode()" [disabled]="!episodeList.length || episodeList[0] === currentEpisode">Previous Episode</button>
+        <button (click)="nextEpisode()" [disabled]="!episodeList.length || episodeList[episodeList.length - 1] === currentEpisode">Next Episode</button>
+    </div>
+
+    <!-- Вибір субтитрів -->
+    <div *ngIf="subtitleTracks.length">
+        <h3>Subtitles</h3>
+        <select [(ngModel)]="selectedSubtitleTrack" (change)="toggleSubtitleTrack(selectedSubtitleTrack)">
+            <option *ngFor="let track of subtitleTracks; let i = index" [value]="i">Subtitle {{ i + 1 }}</option>
+        </select>
+    </div>
+</div>

@@ -37,4 +37,12 @@ export class AnimeService {
     deleteAnime(id: number): Observable<void> {
         return this.http.delete<void>(`${this.apiUrl}/${id}`);
     }
+
+    getAnimeEpisodes(title: string): Observable<string[]> {
+        return this.http.get<string[]>(`${this.apiUrl}/${title}/episodes`);
+    }
+
+    streamEpisode(title: string, episode: string): string {
+        return `${this.apiUrl}/${title}/episodes/${episode}`;
+    }
 }
