@@ -1,0 +1,70 @@
+<div class="video-player" 
+    id="player" 
+    [attr.isPlaying]="isPlaying ? 'true' : 'false'" 
+    [attr.isMuted]="isMuted ? 'true' : 'false'"
+    [attr.isFullscreen]="isFullscreen ? 'true' : 'false'">
+    <video #videoElement poster="assets/poster.png"></video>
+    <audio #audioElement></audio>
+    <div id="ass-container"
+    (click)="handleClick()"></div>
+    <!-- Play/Pause -->
+    <img
+      src="assets/icons/video-player/playFilled.svg"
+      alt="Play"
+      id="playPauseButton"
+      (click)="togglePlayback()"
+    >
+    <div class="controls">
+      <!-- Bottom controls -->
+      <div class="bottom">
+        <div class="container">
+            <img
+              src="assets/icons/video-player/previous.svg"
+              alt="Previous"
+              id="prevEpisode"
+            
+            >
+            <img
+              src="assets/icons/video-player/play.svg"
+              alt="Play"
+              id="bottomPlayPauseButton"
+              (click)="togglePlayback()"
+            >
+            <img
+              src="assets/icons/video-player/next.svg"
+              alt="Next"
+              id="nextEpisode"
+            
+            >
+            <img
+              src="assets/icons/video-player/speaker-fullsound.svg"
+              alt="Mute"
+              id="soundToggle"
+              (click)="toggleMute()"
+            >
+            <!-- <div id="soundBar">------------</div> -->
+            <div id="time">{{ currentTime * 1000 | date:'m:ss' }} / {{ duration * 1000| date:'m:ss' }}</div>
+        </div>
+        <div class="container">
+            <img
+              src="assets/icons/video-player/settings.svg"
+              alt="Mute"
+              id="settingsButton"
+              
+            >
+            <div id="settings">
+                <!-- List for audio tracks and subtitles -->
+                <p (click)="changeAudioTrack()">change audio</p>
+                <p (click)="changeSubtitles()">change subtitles</p>
+            </div>
+            <img
+              src="assets/icons/video-player/fullscreen.svg"
+              alt="fullscreen"
+              id="fullscreenToggle"
+              (click)="toggleFullscreen()"
+            >
+        </div>
+      </div>
+    </div>
+  </div>
+  

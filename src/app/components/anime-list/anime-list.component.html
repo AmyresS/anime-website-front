@@ -1,12 +1,19 @@
-<input [(ngModel)]="searchQuery" placeholder="Пошук за назвою" />
-<select [(ngModel)]="selectedGenre">
-    <option value="">Всі жанри</option>
-    <option *ngFor="let genre of genres" [value]="genre">{{ genre }}</option>
-</select>
-
-<div *ngFor="let anime of filteredAnimeList()">
-    <a routerLink="anime/{{ anime.id }}" routerLinkActive="active" ariaCurrentWhenActive="page"><h2>{{ anime.title }}</h2></a>
-    <p>{{ anime.description }}</p>
-    <p>Genre: {{ anime.genre }}</p>
-    <p>Episodes: {{ anime.episodes }}</p>
-</div>
+<div class="anime-search">
+    <input
+      type="text"
+      [(ngModel)]="searchQuery"
+      placeholder="Введіть назву аніме"
+      (input)="searchAnime()"
+    />
+  </div>
+  
+  <div class="anime-list">
+    <div *ngFor="let anime of animeList" class="anime-item">
+      <a routerLink="/anime/{{ anime.id }}" routerLinkActive="active" ariaCurrentWhenActive="page">
+        FUCKING TEST IT
+        <h3>{{ anime.title }}</h3>
+        <p>Description: {{ anime.description }}</p>
+      </a>
+    </div>
+  </div>
+  

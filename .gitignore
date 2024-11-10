@@ -40,3 +40,9 @@ testem.log
 # System files
 .DS_Store
 Thumbs.db
+
+# media
+/src/assets/audio_track_0.aac
+/src/assets/poster.png
+/src/assets/video.mp4
+/src/assets/Надписи.ass

@@ -1,40 +1,41 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
-interface Anime {
-    id: number;
-    title: string;
-    description: string;
-    genre: string;
-    episodes: number;
-}
-
 @Injectable({
-    providedIn: 'root'
+  providedIn: 'root'
 })
 export class AnimeService {
-    private apiUrl = 'http://localhost:5000/api/anime';
+  private apiUrl = 'http://localhost:5000/api/anime';
 
-    constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) {}
 
-    getAllAnime(): Observable<Anime[]> {
-        return this.http.get<Anime[]>(this.apiUrl);
-    }
+  getAllAnime(): Observable<any> {
+    return this.http.get(`${this.apiUrl}`);
+  }
 
-    getAnimeById(id: number): Observable<Anime> {
-        return this.http.get<Anime>(`${this.apiUrl}/${id}`);
-    }
+  searchAnimeByTitle(title: string): Observable<any> {
+    const params = new HttpParams().set('title', title);
+    return this.http.get(`${this.apiUrl}/search`, { params });
+  }
 
-    createAnime(anime: Anime): Observable<Anime> {
-        return this.http.post<Anime>(this.apiUrl, anime);
-    }
+  getAnimeById(id: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}/${id}/details`);
+  }
 
-    updateAnime(id: number, anime: Anime): Observable<Anime> {
-        return this.http.put<Anime>(`${this.apiUrl}/${id}`, anime);
-    }
+  getEpisodesByAnimeId(id: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/${id}/episodes`);
+  }
 
-    deleteAnime(id: number): Observable<void> {
-        return this.http.delete<void>(`${this.apiUrl}/${id}`);
-    }
+  getEpisodeVideo(id: number, episodeNumber: number): string {
+    return `${this.apiUrl}/${id}/episode/${episodeNumber}/video`;
+  }
+
+  getEpisodeAudio(id: number, episodeNumber: number, track: number): string {
+    return `${this.apiUrl}/${id}/episode/${episodeNumber}/audio/${track}`;
+  }
+
+  getEpisodeSubtitles(id: number, episodeNumber: number, subTrack: number): string {
+    return `${this.apiUrl}/${id}/episode/${episodeNumber}/subtitles/${subTrack}`;
+  }
 }

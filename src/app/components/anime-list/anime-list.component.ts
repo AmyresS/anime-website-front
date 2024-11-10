@@ -1,39 +1,36 @@
 import { Component, OnInit } from '@angular/core';
 import { AnimeService } from '../../services/anime.service';
 
-interface Anime {
-    id: number;
-    title: string;
-    description: string;
-    genre: string;
-    episodes: number;
-}
-
 @Component({
-    selector: 'app-anime-list',
-    templateUrl: './anime-list.component.html',
-    styleUrls: ['./anime-list.component.css']
+  selector: 'app-anime-list',
+  templateUrl: './anime-list.component.html',
+  styleUrls: ['./anime-list.component.css']
 })
 export class AnimeListComponent implements OnInit {
-    animeList: Anime[] = []; // Явне оголошення типу Anime[]
-    searchQuery: string = '';
-    selectedGenre: string = '';
-    genres: string[] = ['Action', 'Adventure', 'Fantasy', 'Drama', 'Comedy', 'Romance']; // перелік жанрів
+  animeList: any[] = [];
+  searchQuery: string = '';
 
-    constructor(private animeService: AnimeService) {}
+  constructor(private animeService: AnimeService) {}
 
-    ngOnInit(): void {
-        this.animeService.getAllAnime().subscribe((data: Anime[]) => {
-            this.animeList = data;
-        });
+  ngOnInit(): void {
+    this.loadAnimeList();
+  }
+
+  loadAnimeList(): void {
+    this.animeService.getAllAnime().subscribe(
+      data => this.animeList = data,
+      error => console.error('Помилка при завантаженні аніме:', error)
+    );
+  }
+
+  searchAnime(): void {
+    if (this.searchQuery.trim()) {
+      this.animeService.searchAnimeByTitle(this.searchQuery).subscribe(
+        data => this.animeList = data,
+        error => console.error('Помилка при пошуку аніме:', error)
+      );
+    } else {
+      this.loadAnimeList();
     }
-
-
-    filteredAnimeList(): Anime[] {
-        return this.animeList.filter(anime => {
-            const matchesSearch = anime.title.toLowerCase().includes(this.searchQuery.toLowerCase());
-            const matchesGenre = this.selectedGenre ? anime.genre === this.selectedGenre : true;
-            return matchesSearch && matchesGenre;
-        });
-    }
+  }
 }
