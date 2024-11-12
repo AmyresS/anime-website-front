@@ -10,21 +10,43 @@ export class VideoPlayerComponent implements AfterViewInit {
   @ViewChild('videoElement') videoElement!: ElementRef<HTMLVideoElement>;
   @ViewChild('audioElement') audioElement!: ElementRef<HTMLAudioElement>;
 
-  isPlaying: boolean = false;
-  isMuted: boolean = false;
+  hoverTimeVisible: boolean = false;
   isFullscreen: boolean = false;
+  isMuted: boolean = false;
+  isPlaying: boolean = false;
+  bufferedPercentage: number = 0;
   currentTime: number = 0;
-  duration: number = 0;
   clickCount = 0;
+  duration: number = 0;
+  hoverTime: number = 0;
+  hoverTimePosition: number = 0;
+  playedPercentage: number = 0;
+  previousVolume: number = 1;
+  hideControlsTimeout: any;
   player: any;
+  volumeSlider: any;
 
   ngAfterViewInit() {
     this.initializePlayer();
-    this.player = document.querySelector('#player');
-    this.loadVideo();
-    this.loadAudio();
+    this.loadMedia();
     this.loadSubtitles();
+    this.player = document.querySelector('#player');
+    this.volumeSlider = document.querySelector('#volumeSlider');
+
+    this.videoElement.nativeElement.addEventListener('progress', this.updateBuffer.bind(this));
+    this.videoElement.nativeElement.addEventListener('timeupdate', this.updateProgress.bind(this));
+
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.setActionHandler('play', () => {
+        this.togglePlayback();
+      });
+      navigator.mediaSession.setActionHandler('pause', () => {
+        this.togglePlayback();
+      });
+    }
   }
+
+  /* Player & media initialization */
 
   initializePlayer() {
     const video = this.videoElement.nativeElement;
@@ -36,27 +58,8 @@ export class VideoPlayerComponent implements AfterViewInit {
     };
   }
 
-  togglePlayback() {
-    if (this.videoElement.nativeElement.paused) {
-      this.videoElement.nativeElement.play().catch(error => {
-        console.warn('Video play was prevented:', error);
-      });
-      this.audioElement.nativeElement.play().catch(error => {
-        console.warn('Audio play was prevented:', error);
-      });
-      this.isPlaying = true;
-    } else {
-      this.videoElement.nativeElement.pause();
-      this.audioElement.nativeElement.pause();
-      this.isPlaying = false;
-    }
-  }
-
-  loadVideo() {
+  loadMedia() {
     this.videoElement.nativeElement.src = '../assets/video.mp4';
-  }
-
-  loadAudio() {
     this.audioElement.nativeElement.src = '../assets/audio_track_0.aac';
   }
 
@@ -70,10 +73,26 @@ export class VideoPlayerComponent implements AfterViewInit {
         });
       });
   }
+
+  updateBuffer() {
+    const video = this.videoElement.nativeElement;
+    if (video.buffered.length) {
+      const bufferedEnd = video.buffered.end(video.buffered.length - 1);
+      this.bufferedPercentage = (bufferedEnd / video.duration) * 100;
+    }
+  }
+
+  updateProgress() {
+    const video = this.videoElement.nativeElement;
+    if (video.duration > 0) {
+      this.playedPercentage = (video.currentTime / video.duration) * 100;
+    }
+  }
   
-  toggleMute() {
-    this.isMuted = !this.isMuted;
-    this.audioElement.nativeElement.muted = this.isMuted;
+  /* Player controls */
+  
+  hideHoverTime() {
+    this.hoverTimeVisible = false;
   }
 
   handleClick() {
@@ -88,26 +107,108 @@ export class VideoPlayerComponent implements AfterViewInit {
     }, 250)
   }
 
-  toggleFullscreen() {
-    if (!document.fullscreenElement) {
-      this.player.requestFullscreen()
-      .then(() => {
-        this.isFullscreen = true;
-        // this.player.requestPointerLock(); // TODO: Hide cursor and controls 3s after fullscreen toggle
-      })
-      .catch((error: any) => {
-        console.error('Fullscreen request failed:', error);
+  changeVolume() {
+    const volume = parseFloat(this.volumeSlider.value);
+
+    if (volume > 0) {
+      this.isMuted = false;
+      this.audioElement.nativeElement.muted = false;
+    }
+    else if (volume == 0) {
+      this.isMuted = true;
+    }
+
+    this.audioElement.nativeElement.volume = volume;
+  }
+
+  seekVideo(event: Event) {
+    const target = event.target as HTMLInputElement;
+    this.syncMediaTime(parseFloat(target.value));
+  }
+
+  syncMediaTime(time: number) {
+    this.videoElement.nativeElement.currentTime = time;
+    this.audioElement.nativeElement.currentTime = time;
+    this.currentTime = time;
+  }
+
+  showHoverTime(event: MouseEvent) {
+    const target = event.target as HTMLInputElement;
+    const rect = target.getBoundingClientRect();
+    const position = (event.clientX - rect.left) / rect.width;
+    this.hoverTime = position * this.duration;
+    this.hoverTimePosition = event.clientX - rect.left;
+    this.hoverTimeVisible = true;
+  }
+
+  togglePlayback() {
+    if (this.videoElement.nativeElement.paused) {
+      this.videoElement.nativeElement.play().catch(error => {
+        console.warn('Video play was prevented:', error);
       });
+      this.audioElement.nativeElement.play().catch(error => {
+        console.warn('Audio play was prevented:', error);
+      });
+      this.isPlaying = true;
+      this.startHideControlsTimer();
     } else {
-      document.exitFullscreen()
-      .then(() => {
-        this.isFullscreen = false;
-      })
-      .catch((error: any) => {
-        console.error('Exiting fullscreen failed:', error);
-      });
+      this.videoElement.nativeElement.pause();
+      this.audioElement.nativeElement.pause();
+      this.isPlaying = false;
+      this.showControls();
     }
   }
+
+  toggleMute() {
+    this.isMuted = !this.isMuted;
+  
+    if (this.isMuted) {
+      this.previousVolume = this.audioElement.nativeElement.volume;
+      this.audioElement.nativeElement.volume = 0;
+    } else {
+      this.audioElement.nativeElement.volume = this.previousVolume;
+    }
+  }
+
+  toggleFullscreen() {
+    if (!document.fullscreenElement) {
+      this.player.requestFullscreen().catch(error => console.error('Fullscreen request failed:', error));
+    } else {
+      document.exitFullscreen().catch(error => console.error('Exiting fullscreen failed:', error));
+    }
+    this.isFullscreen = !this.isFullscreen;
+    this.isFullscreen ? this.startHideControlsTimer() : this.showControls();
+  }
+
+  startHideControlsTimer() {
+    if (this.isPlaying && this.isFullscreen) {
+      clearTimeout(this.hideControlsTimeout);
+      this.hideControlsTimeout = setTimeout(() => {
+        this.hideControls();
+      }, 3000);
+    }
+  }
+
+  hideControls() {
+    document.querySelector('.controls')?.classList.add('hidden');
+    document.body.style.cursor = 'none';
+  }
+
+  showControls() {
+    clearTimeout(this.hideControlsTimeout);
+    document.querySelector('.controls')?.classList.remove('hidden');
+    document.body.style.cursor = 'default';
+  }
+
+  @HostListener('mousemove')
+  onUserActivity() {
+    if (this.isFullscreen && this.isPlaying) {
+      this.showControls();
+      this.startHideControlsTimer();
+    }
+  }
+
+  /* Streaming */
 
   changeAudioTrack() {
     // Реалізація зміни аудіо-доріжки
