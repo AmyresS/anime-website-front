@@ -202,7 +202,14 @@
         }
 
         #settings {
-            display: none;
+            * {
+                cursor: pointer;
+                transition: all .3s;
+
+                &:hover {
+                    color: #fff;
+                }
+            }
         }
     }
 

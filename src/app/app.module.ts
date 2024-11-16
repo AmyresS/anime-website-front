@@ -20,6 +20,9 @@ import { VideoPlayerComponent } from './components/video-player/video-player.com
     FormsModule,
     AppRoutingModule
   ],
+  exports: [
+    VideoPlayerComponent
+  ],
   providers: [provideHttpClient()],
   bootstrap: [AppComponent]
 })

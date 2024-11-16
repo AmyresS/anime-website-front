@@ -1,1 +1,26 @@
-<div>test detail</div>
+<div class="anime-details">
+  <!-- Завантаження даних про аніме -->
+  <ng-container *ngIf="anime$ | async as anime">
+    <h1>{{ anime.title }}</h1>
+    <p>{{ anime.description }}</p>
+    <p>Рік випуску: {{ anime.yearReleased }}</p>
+    <p>Кількість серій: {{ anime.episodeCount }}</p>
+
+    <!-- Відеоплеєр -->
+    <app-video-player
+      [audioTracks]="audios$ | async"
+      [video]="video$ | async"
+      [subtitles]="subtitles$ | async">
+    </app-video-player>
+    <!-- <app-video-player
+      [audioTracks]="audios$ | async"
+      [video]="video$ | async"
+      [subtitles]="subtitles$ | async">
+    </app-video-player> -->
+  </ng-container>
+
+  <!-- Повідомлення, якщо аніме не знайдено -->
+  <div *ngIf="!(anime$ | async)">
+    <p>Дані про аніме відсутні.</p>
+  </div>
+</div>

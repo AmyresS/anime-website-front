@@ -4,7 +4,8 @@
     [attr.isMuted]="isMuted ? 'true' : 'false'"
     [attr.isFullscreen]="isFullscreen ? 'true' : 'false'">
 
-  <video #videoElement poster="assets/poster.png"></video>
+  <!-- <video #videoElement poster="assets/poster.png"></video> -->
+  <video #videoElement></video>
   <audio #audioElement></audio>
   <div id="ass-container" (click)="handleClick()"></div>
 
@@ -25,7 +26,7 @@
         <div id="hoverTime"
           *ngIf="hoverTimeVisible" 
           [style.left.px]="hoverTimePosition">
-          {{ hoverTime * 1000 | date:'m:ss' }}
+          {{ getFormattedTime(hoverTime) }}
         </div>
 
         <div id="buffer-bar" [style.width.%]="bufferedPercentage"></div>
@@ -73,7 +74,7 @@
               (input)="changeVolume()" />
           </div>
         </div>
-        <div id="time">{{ currentTime * 1000 | date:'m:ss' }} / {{ duration * 1000| date:'m:ss' }}</div>
+        <div id="time">{{ getFormattedTime(currentTime) }} / {{ getFormattedTime(duration) }}</div>
       </div>
       <div class="container">
         <img
@@ -83,9 +84,22 @@
           
         >
         <div id="settings">
-          <!-- List for audio tracks and subtitles -->
-          <p (click)="changeAudioTrack()">change audio</p>
-          <p (click)="changeSubtitles()">change subtitles</p>
+          <!-- Управління аудіо-доріжками -->
+          <label>Аудіо:</label>
+          <select (change)="changeAudioTrack($event)">
+            <option *ngFor="let track of audioTracks" [value]="track.id">
+              {{ [track.fileName, " [", track.language || 'Default', "]"].join('') }}
+            </option>
+          </select>
+
+          <!-- Управління субтитрами -->
+          <label>Субтитри:</label>
+          <select (change)="changeSubtitles($event)">
+            <option value="none">Без субтитрів</option>
+            <option *ngFor="let subtitle of subtitles" [value]="subtitle.id">
+              {{ [ subtitle.fileName, " [", subtitle.language || 'Unknown', "]" ].join('') }}
+            </option>
+          </select>
         </div>
         <img
           [src]="isFullscreen ? 'assets/icons/video-player/fullscreen-exit.svg' : 'assets/icons/video-player/fullscreen.svg'"

@@ -1,4 +1,5 @@
-import { Component, ElementRef, HostListener, ViewChild, AfterViewInit } from '@angular/core';
+import { Component, ElementRef, HostListener, ViewChild, AfterViewInit, Input, SimpleChanges } from '@angular/core';
+import { AnimeService } from '../../services/anime.service';
 import ASS from 'assjs';
 
 @Component({
@@ -7,9 +8,22 @@ import ASS from 'assjs';
   styleUrl: './video-player.component.css'
 })
 export class VideoPlayerComponent implements AfterViewInit {
-  @ViewChild('videoElement') videoElement!: ElementRef<HTMLVideoElement>;
+
+  constructor(
+    private animeService: AnimeService
+  ) {}
+
+  @ViewChild('videoElement', { static: true }) videoElement!: ElementRef<HTMLVideoElement>;
   @ViewChild('audioElement') audioElement!: ElementRef<HTMLAudioElement>;
 
+  @Input() video: any;
+  @Input() audioTracks: any[] = []; // Аудіо-доріжки
+  @Input() subtitles: any[] = [];   // Субтитри
+
+  videoUrl: string | null = null;
+  audioUrl: string | null = null;
+
+  currentSubtitle: string = '';
   hoverTimeVisible: boolean = false;
   isFullscreen: boolean = false;
   isMuted: boolean = false;
@@ -22,16 +36,18 @@ export class VideoPlayerComponent implements AfterViewInit {
   hoverTimePosition: number = 0;
   playedPercentage: number = 0;
   previousVolume: number = 1;
+  assContainer: any;
+  currentAssInstance: any | null = null;
   hideControlsTimeout: any;
   player: any;
   volumeSlider: any;
 
   ngAfterViewInit() {
     this.initializePlayer();
-    this.loadMedia();
-    this.loadSubtitles();
+    
     this.player = document.querySelector('#player');
     this.volumeSlider = document.querySelector('#volumeSlider');
+    this.assContainer = document.querySelector('#ass-container');
 
     this.videoElement.nativeElement.addEventListener('progress', this.updateBuffer.bind(this));
     this.videoElement.nativeElement.addEventListener('timeupdate', this.updateProgress.bind(this));
@@ -43,6 +59,25 @@ export class VideoPlayerComponent implements AfterViewInit {
       navigator.mediaSession.setActionHandler('pause', () => {
         this.togglePlayback();
       });
+    }
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['video'] && changes['video'].currentValue) {
+      this.loadMedia();
+    }
+    // if (changes['subtitles']) {
+    //   this.loadSubtitles();
+    // }
+  }
+
+  // Метод для очищення URL, коли компонент знищується
+  ngOnDestroy(): void {
+    if (this.videoUrl) {
+      URL.revokeObjectURL(this.videoUrl);
+    }
+    if (this.audioUrl) {
+      URL.revokeObjectURL(this.audioUrl);
     }
   }
 
@@ -59,21 +94,32 @@ export class VideoPlayerComponent implements AfterViewInit {
   }
 
   loadMedia() {
-    this.videoElement.nativeElement.src = '../assets/video.mp4';
-    this.audioElement.nativeElement.src = '../assets/audio_track_0.aac';
+    const videoUrl = this.animeService.streamMedia(this.video.id, 'video');
+    const audioUrl = this.animeService.streamMedia(this.audioTracks[0].id, 'audio');
+    
+    this.videoElement.nativeElement.src = videoUrl;
+    this.audioElement.nativeElement.src = audioUrl;
+    this.videoElement.nativeElement.load();  
+    // this.audioElement.nativeElement.load();  
   }
+  
 
-  loadSubtitles() {
-    fetch('../assets/Надписи.ass')
+  loadSubtitles(subtitle: any): void {
+    const subtitleUrl = this.animeService.streamMedia(subtitle, 'subtitles');
+  
+    fetch(subtitleUrl)
       .then(response => response.text())
       .then(assContent => {
-        const ass = new ASS(assContent, this.videoElement.nativeElement, {
-          container: document.querySelector('#ass-container'),
-          // resampling: 'video_width',
+        if (this.currentAssInstance) {
+          this.currentAssInstance.destroy();
+        }
+        this.currentAssInstance = new ASS(assContent, this.videoElement.nativeElement, {
+          container: this.assContainer,
         });
-      });
+      })
+      .catch(error => console.error('Помилка при завантаженні субтитрів:', error));
   }
-
+  
   updateBuffer() {
     const video = this.videoElement.nativeElement;
     if (video.buffered.length) {
@@ -90,6 +136,19 @@ export class VideoPlayerComponent implements AfterViewInit {
   }
   
   /* Player controls */
+
+  getFormattedTime(seconds: number): string {
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+
+    const hoursStr = hrs > 0 ? hrs.toString().padStart(2, '0') + ':' : '';
+    const minutesStr = mins.toString().padStart(2, '0');
+    const secondsStr = secs.toString().padStart(2, '0');
+
+    return `${hoursStr}${minutesStr}:${secondsStr}`;
+}
+
   
   hideHoverTime() {
     this.hoverTimeVisible = false;
@@ -210,11 +269,40 @@ export class VideoPlayerComponent implements AfterViewInit {
 
   /* Streaming */
 
-  changeAudioTrack() {
-    // Реалізація зміни аудіо-доріжки
+  changeAudioTrack(event: Event): void {
+    const target = event.target as HTMLSelectElement;
+    const audioId = Number(target.value);
+    if (audioId) {
+      this.audioElement.nativeElement.src = this.animeService.streamMedia(audioId, 'audio');
+      this.audioElement.nativeElement.load();
+      this.audioElement.nativeElement.play();
+      this.syncMediaTime(this.currentTime);
+    }
+  }  
+
+  changeSubtitles(event: Event): void {
+    const target = event.target as HTMLSelectElement;
+    const subtitleId = target.value;
+    // Очищуємо попередні субтитри
+    if (this.currentAssInstance) {
+      this.currentAssInstance.destroy();
+      this.currentAssInstance = null;
+    }
+
+    if (subtitleId === 'none') {
+      this.disableSubtitles(); // Вимикаємо субтитри
+    } else {
+      const selectedSubtitle = this.subtitles.find(sub => sub.id.toString() === subtitleId);
+      if (selectedSubtitle) {
+        this.loadSubtitles(selectedSubtitle.id);
+      }
+    }
   }
 
-  changeSubtitles() {
-    // Реалізація зміни субтитрів
+  disableSubtitles(): void {
+    if (this.currentAssInstance) {
+      this.currentAssInstance.destroy();
+      this.currentAssInstance = null;
+    }
   }
 }

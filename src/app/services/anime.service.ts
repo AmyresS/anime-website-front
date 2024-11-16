@@ -1,17 +1,31 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { switchMap, catchError, map } from 'rxjs/operators';
+import { of } from 'rxjs';
+
+interface MediaFile {
+  id: number;
+  fileType: string;
+  fileName: string;
+  language: string | null;
+}
+
+interface MediaResponse {
+  media: MediaFile[];
+}
 
 @Injectable({
   providedIn: 'root'
 })
+
 export class AnimeService {
   private apiUrl = 'http://localhost:5000/api/anime';
 
   constructor(private http: HttpClient) {}
 
-  getAllAnime(): Observable<any> {
-    return this.http.get(`${this.apiUrl}`);
+  getAllAnime(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}`);
   }
 
   searchAnimeByTitle(title: string): Observable<any> {
@@ -20,22 +34,20 @@ export class AnimeService {
   }
 
   getAnimeById(id: number): Observable<any> {
-    return this.http.get(`${this.apiUrl}/${id}/details`);
+    return this.http.get<any>(`${this.apiUrl}/${id}/details`);
   }
 
   getEpisodesByAnimeId(id: number): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/${id}/episodes`);
   }
 
-  getEpisodeVideo(id: number, episodeNumber: number): string {
-    return `${this.apiUrl}/${id}/episode/${episodeNumber}/video`;
-  }
+  getMedia(animeId: number, episodeNumber: number): Observable<MediaFile[]> {
+    return this.http.get<MediaResponse>(`${this.apiUrl}/${animeId}/episode/${episodeNumber}/media`).pipe(
+      map(response => response.media)
+    );
+  }  
 
-  getEpisodeAudio(id: number, episodeNumber: number, track: number): string {
-    return `${this.apiUrl}/${id}/episode/${episodeNumber}/audio/${track}`;
-  }
-
-  getEpisodeSubtitles(id: number, episodeNumber: number, subTrack: number): string {
-    return `${this.apiUrl}/${id}/episode/${episodeNumber}/subtitles/${subTrack}`;
+  streamMedia(id: number, type: string): string {
+    return `${this.apiUrl}/stream/${id}?type=${type}`;
   }
 }

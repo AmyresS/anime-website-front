@@ -17,18 +17,18 @@ export class AnimeListComponent implements OnInit {
   }
 
   loadAnimeList(): void {
-    this.animeService.getAllAnime().subscribe(
-      data => this.animeList = data,
-      error => console.error('Помилка при завантаженні аніме:', error)
-    );
-  }
+    this.animeService.getAllAnime().subscribe({
+      next: data => this.animeList = data,
+      error: error => console.error('Помилка при завантаженні аніме:', error)
+    });
+  }  
 
   searchAnime(): void {
     if (this.searchQuery.trim()) {
-      this.animeService.searchAnimeByTitle(this.searchQuery).subscribe(
-        data => this.animeList = data,
-        error => console.error('Помилка при пошуку аніме:', error)
-      );
+      this.animeService.searchAnimeByTitle(this.searchQuery).subscribe({
+        next: data => this.animeList = data,
+        error: error => console.error('Помилка при пошуку аніме:', error)
+      });
     } else {
       this.loadAnimeList();
     }

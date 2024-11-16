@@ -10,9 +10,10 @@
   <div class="anime-list">
     <div *ngFor="let anime of animeList" class="anime-item">
       <a routerLink="/anime/{{ anime.id }}" routerLinkActive="active" ariaCurrentWhenActive="page">
-        FUCKING TEST IT
         <h3>{{ anime.title }}</h3>
         <p>Description: {{ anime.description }}</p>
+        <p>Release year: {{ anime.yearReleased }}</p>
+        <p>Episodes: {{ anime.episodeCount }}</p>
       </a>
     </div>
   </div>
